@@ -85,7 +85,7 @@ dataset = dataio.ReachabilityQuadrupedSource(numpoints=65000, collisionR=opt.col
 
 dataloader = DataLoader(dataset, shuffle=True, batch_size=opt.batch_size, pin_memory=True, num_workers=0)
 
-model = modules.SingleBVPNet(in_features=4, out_features=1, type=opt.model, mode=opt.mode,
+model = modules.SingleBVPNet(in_features=14, out_features=1, type=opt.model, mode=opt.mode,
                              final_layer_factor=1., hidden_features=opt.num_nl, num_hidden_layers=opt.num_hl)
 model.to('cpu')
 

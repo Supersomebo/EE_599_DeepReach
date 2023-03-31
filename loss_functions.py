@@ -12,6 +12,7 @@ import math
 import numpy as np
 
 
+
 def initialize_hji_MultiVehicleCollisionNE(dataset, minWith):
     # Initialize the loss function for the multi-vehicle collision avoidance problem
     # The dynamics parameters
@@ -102,6 +103,7 @@ def initialize_hji_air3D(dataset, minWith):
         # \dot \psi = b - a
 
         # Compute the hamiltonian for the ego vehicle
+        c = dudx[..., 0] * x[..., 2]
         ham = omega_max * torch.abs(dudx[..., 0] * x[..., 2] - dudx[..., 1] * x[..., 1] - dudx[..., 2])  # Control component
         ham = ham - omega_max * torch.abs(dudx[..., 2])  # Disturbance component
         ham = ham + (velocity * (torch.cos(x_theta) - 1.0) * dudx[..., 0]) + (velocity * torch.sin(x_theta) * dudx[..., 1])  # Constant component
@@ -143,58 +145,62 @@ def initialize_hji_quadruped(dataset, minWidth):
         dudt = du[..., 0, 0]
         dudx = du[..., 0, 1:]
         
-        dudx[..., 2] = dudx[..., 2] / alpha_angle
+        # dudx[..., 2] = dudx[..., 2] / alpha_angle
         
         # compute hamiltonian 
        
-        Ib = [[0.016839930, 0.000083902, 0.000597679],
-            [0.000083902, 0.056579028, 0.000025134],
-            [0.000597679, 0.000025134, 0.064713601]]
-        m = 12
+        Ib = torch.tensor([[0.016839930, 0.000083902, 0.000597679],
+                           [0.000083902, 0.056579028, 0.000025134],
+                           [0.000597679, 0.000025134, 0.064713601]])
+        m = 12.0
+        # Ib = Ib/m
         u_max = 100
             
-        r1 = r2 = r3 = r4 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+        r1 = r2 = r3 = r4 = torch.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         
-        A = [[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-            
-        B = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            
-            np.concatenate((inv(Ib)*r1, inv(Ib)*r2, inv(Ib)*r3, inv(Ib)*r4), axis=1),
-            
-            np.concatenate((Ib/m, Ib/m, Ib/m, Ib/m), axis=1),
-            
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+        A = torch.tensor([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+
+        B1_tmp = torch.cat((torch.linalg.inv(Ib) * r1, torch.linalg.inv(Ib) * r2, torch.linalg.inv(Ib) * r3,
+                            torch.linalg.inv(Ib) * r4), 1)
+        B2_tmp = torch.cat((Ib, Ib, Ib, Ib), 1)
+        a = B1_tmp[0]
+        B = torch.tensor([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                          B1_tmp[0], B1_tmp[1], B1_tmp[2], B2_tmp[0], B2_tmp[1], B2_tmp[2],
+                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
         
-        k = np.zeros(12, 1)
+        k = torch.zeros(12)
+        p = k[1]
         ham = 0
         for i in range(12):
-            tmp = dudx(0)*B(0, i) + dudx(1)*B(1, i) + dudx(2)*B(2, i) + dudx(3)*B(3, i) + dudx(4)*B(4, i) + \
-                   dudx(5)*B(5, i) + dudx(6)*B(6, i) + dudx(7)*B(7, i) + dudx(8)*B(8, i) + dudx(9)*B(9, i) + \
-                   dudx(10)*B(10, i) + dudx(11)*B(11, i)
-            # k(i) = dudx(0)*B(0, i) + dudx(1)*B(1, i) + dudx(2)*B(2, i) + dudx(3)*B(3, i) + dudx(4)*B(4, i) + \
+            # tmp = dudx(0)*B(0, i) + dudx(1)*B(1, i) + dudx(2)*B(2, i) + dudx(3)*B(3, i) + dudx(4)*B(4, i) + \
             #        dudx(5)*B(5, i) + dudx(6)*B(6, i) + dudx(7)*B(7, i) + dudx(8)*B(8, i) + dudx(9)*B(9, i) + \
             #        dudx(10)*B(10, i) + dudx(11)*B(11, i)
-            # ham += k(i)*u_max
+            b = torch.mul(dudx[..., 0], B[0][i])
+            a = dudx[..., 0] * B[0][i]
+            k[i+1] = dudx[..., 0]*B[0][i] + dudx[..., 1]*B[1][i] + dudx[..., 2]*B[2][i] + dudx[..., 3]*B[3][i] + dudx[..., 4]*B[4][i] + \
+                   dudx[..., 5]*B[5][i] + dudx[..., 6]*B[6][i] + dudx[..., 7]*B[7][i] + dudx[..., 8]*B[8][i] + dudx[..., 9]*B[9][i] + \
+                   dudx[..., 10]*B[10][i] + dudx[..., 11]*B[11][i]
+            ham += k[i]*u_max
             # control part
         for i in range(13):
-            ham += dudx(i)*A[i, :] * x[..., :]
+            ham += dudx[i]*A[i, :] * x[..., :]
         
         
         if minWith == 'zero':
