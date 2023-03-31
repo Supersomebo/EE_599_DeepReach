@@ -131,7 +131,8 @@ def initialize_hji_air3D(dataset, minWith):
 # ORIGINAL CODE END -------------------------------------------------------------------------------------------------------------
 
 # MY CODE START -----------------------------------------------------------------------------------------------------------------
-def initialize_hji_quadruped(dataset, minWidth):
+
+def initialize_hji_quadruped(dataset, minWith):
     # Initialize the loss function for our avoidance problem
 
     def hji_quadruped(model_output, gt):
@@ -185,22 +186,28 @@ def initialize_hji_quadruped(dataset, minWidth):
                           B1_tmp[0], B1_tmp[1], B1_tmp[2], B2_tmp[0], B2_tmp[1], B2_tmp[2],
                           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
         
-        k = torch.zeros(12)
-        p = k[1]
-        ham = 0
+        k = torch.zeros((65000, 12))
+        ham = torch.zeros((1, 65000))
         for i in range(12):
             # tmp = dudx(0)*B(0, i) + dudx(1)*B(1, i) + dudx(2)*B(2, i) + dudx(3)*B(3, i) + dudx(4)*B(4, i) + \
             #        dudx(5)*B(5, i) + dudx(6)*B(6, i) + dudx(7)*B(7, i) + dudx(8)*B(8, i) + dudx(9)*B(9, i) + \
             #        dudx(10)*B(10, i) + dudx(11)*B(11, i)
             b = torch.mul(dudx[..., 0], B[0][i])
-            a = dudx[..., 0] * B[0][i]
-            k[i+1] = dudx[..., 0]*B[0][i] + dudx[..., 1]*B[1][i] + dudx[..., 2]*B[2][i] + dudx[..., 3]*B[3][i] + dudx[..., 4]*B[4][i] + \
+            a = dudx[..., 0] * B[0][i] + dudx[..., 1]*B[1][i]
+            k[:, i] = dudx[..., 0]*B[0][i] + dudx[..., 1]*B[1][i] + dudx[..., 2]*B[2][i] + dudx[..., 3]*B[3][i] + dudx[..., 4]*B[4][i] + \
                    dudx[..., 5]*B[5][i] + dudx[..., 6]*B[6][i] + dudx[..., 7]*B[7][i] + dudx[..., 8]*B[8][i] + dudx[..., 9]*B[9][i] + \
                    dudx[..., 10]*B[10][i] + dudx[..., 11]*B[11][i]
-            ham += k[i]*u_max
+            k_tmp = k[:, i] * u_max
+            k_tmp = torch.reshape(k_tmp, (1, -1))
+            ham += k_tmp
             # control part
         for i in range(13):
-            ham += dudx[i]*A[i, :] * x[..., :]
+            A_tmp = torch.reshape(A[i, :], (-1, 1)).float()
+            x_tmp = torch.reshape(x[..., 1:], (-1, 13))
+            cons_tmp = torch.matmul(x_tmp, A_tmp)
+            ham_tmp = torch.mm(dudx[..., i], cons_tmp)
+            ham += torch.reshape(ham_tmp, (1, -1))
+            # constant part
         
         
         if minWith == 'zero':

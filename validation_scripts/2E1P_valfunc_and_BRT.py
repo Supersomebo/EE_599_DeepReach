@@ -51,7 +51,7 @@ num_slices = len(poss['1E'])
 
 # Load the model
 model = modules.SingleBVPNet(in_features=10, out_features=1, type='sine', mode='mlp', final_layer_factor=1., hidden_features=512, num_hidden_layers=3)
-model.to('cpu')
+model.cuda()
 checkpoint = torch.load(ckpt_path)
 try:
   model_weights = checkpoint['model']
@@ -63,7 +63,7 @@ model.eval()
 # Load the 2 vehicle model
 model_1P = modules.SingleBVPNet(in_features=7, out_features=1, type='sine', mode='mlp',
                                 final_layer_factor=1., hidden_features=512, num_hidden_layers=3)
-model_1P.to('cpu')
+model_1P.cuda()
 checkpoint = torch.load(ckpt_path_1P)
 try:
   model_weights = checkpoint['model']
@@ -118,7 +118,7 @@ def val_fn_BRS_posspace(model, model_1P):
       # Theta coordinates of the evaders for the pairwise game
       pairwise_coords[evader_key] = torch.cat((pairwise_coords[evader_key], tcoords, coords_ego_theta), dim=1)
 
-    model_in = {'coords': coords[:, None, :].to('cpu')}
+    model_in = {'coords': coords[:, None, :].cuda()}
     model_out = model(model_in)
 
     # Detatch model ouput and reshape
@@ -158,7 +158,7 @@ def val_fn_BRS_posspace(model, model_1P):
     valfunc_pairwise = None
     for j in range(2):
       evader_key = '%i' %(j+1) + 'E'
-      model_in_pairwise = {'coords': pairwise_coords[evader_key].to('cpu')}
+      model_in_pairwise = {'coords': pairwise_coords[evader_key].cuda()}
       model_out_pairwise = model_1P(model_in_pairwise)['model_out'].detach().cpu().numpy()
       model_out_pairwise = model_out_pairwise.reshape((sidelen, sidelen))
       norm_to_pairwise = 0.02

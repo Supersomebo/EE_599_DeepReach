@@ -81,7 +81,7 @@ dataloader = DataLoader(dataset, shuffle=True, batch_size=opt.batch_size, pin_me
 model = modules.SingleBVPNet(in_features=(opt.numEvaders+1)*3 + 1, out_features=1, type=opt.model, mode=opt.mode,
                                 final_layer_factor=1., hidden_features=512, num_hidden_layers=opt.num_hl)
 
-model.to('cpu')
+model.cuda()
 
 # Define the loss
 loss_fn = loss_functions.initialize_hji_MultiVehicleCollisionNE(dataset, opt.minWith)
